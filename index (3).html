@@ -1,0 +1,703 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>JD Optimizer — BUS670</title>
+<link rel="preconnect" href="https://fonts.googleapis.com"/>
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin/>
+<link href="https://fonts.googleapis.com/css2?family=DM+Serif+Display:ital@0;1&family=DM+Mono:wght@400;500&family=Instrument+Sans:ital,wght@0,400;0,500;0,600;1,400&display=swap" rel="stylesheet"/>
+<style>
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+:root{
+  --bg:#F7F5F0;--surface:#FFFFFF;--surface2:#F0EDE6;
+  --border:#E2DDD5;--border-strong:#C8C2B8;
+  --ink:#1A1714;--ink2:#6B6560;--ink3:#9C9590;
+  --accent:#2D5016;--accent-light:#EAF2E0;--accent-mid:#5A8A2A;
+  --warn:#7A4A00;--warn-light:#FEF3DC;--warn-border:#D4A843;
+  --danger:#7A1A1A;--danger-light:#FDEAEA;
+  --info:#0C447C;--info-light:#E6F1FB;
+  --good:#1A4A2A;--good-light:#E6F4EC;
+  --radius:10px;--radius-lg:16px;
+}
+body{font-family:'Instrument Sans',sans-serif;background:var(--bg);color:var(--ink);min-height:100vh;line-height:1.6}
+
+header{background:var(--ink);color:#F7F5F0;padding:28px 40px;display:flex;align-items:flex-end;justify-content:space-between;flex-wrap:wrap;gap:12px}
+.header-title{font-family:'DM Serif Display',serif;font-size:2rem;line-height:1.1;letter-spacing:-.02em}
+.header-title span{font-style:italic;color:#A8C880}
+.header-meta{font-size:12px;color:#9C9590;text-align:right;line-height:1.8}
+
+main{max-width:980px;margin:0 auto;padding:40px 24px 80px}
+
+.tabs{display:flex;gap:2px;border-bottom:1px solid var(--border);margin-bottom:28px}
+.tab{padding:10px 20px;font-size:13px;font-weight:500;cursor:pointer;border:none;background:none;color:var(--ink2);border-bottom:2px solid transparent;transition:all .15s;font-family:'Instrument Sans',sans-serif}
+.tab.active{color:var(--ink);border-bottom-color:var(--ink)}
+.tab:hover:not(.active){color:var(--ink)}
+
+.card{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius-lg);padding:22px 24px;margin-bottom:14px}
+.card-label{font-size:10px;font-weight:600;letter-spacing:.12em;text-transform:uppercase;color:var(--ink3);margin-bottom:10px}
+
+.intro{margin-bottom:28px}
+.intro h2{font-family:'DM Serif Display',serif;font-size:1.5rem;margin-bottom:6px}
+.intro p{font-size:14px;color:var(--ink2);max-width:600px}
+
+textarea{width:100%;font-family:'DM Mono',monospace;font-size:13px;line-height:1.7;padding:14px;border:1px solid var(--border);border-radius:var(--radius);background:var(--surface2);color:var(--ink);resize:vertical;min-height:200px;outline:none;transition:border-color .15s}
+textarea:focus{border-color:var(--border-strong);background:var(--surface)}
+textarea::placeholder{color:var(--ink3)}
+
+.btn{display:inline-flex;align-items:center;gap:6px;padding:9px 20px;border-radius:var(--radius);font-family:'Instrument Sans',sans-serif;font-size:13px;font-weight:500;cursor:pointer;transition:all .15s;border:1px solid var(--border-strong);background:transparent;color:var(--ink);line-height:1}
+.btn:hover{background:var(--surface2)}
+.btn:active{transform:scale(.98)}
+.btn-primary{background:var(--ink);color:#F7F5F0;border-color:var(--ink)}
+.btn-primary:hover{background:#3a3530}
+.btn-sm{padding:5px 12px;font-size:12px}
+
+.action-row{display:flex;gap:8px;margin-top:12px;flex-wrap:wrap;align-items:center}
+
+.score-bar-row{margin-bottom:12px}
+.score-bar-header{display:flex;justify-content:space-between;font-size:12px;margin-bottom:4px}
+.score-bar-label{color:var(--ink2)}
+.score-track{height:6px;background:var(--surface2);border-radius:3px;overflow:hidden;border:1px solid var(--border)}
+.score-fill{height:100%;border-radius:3px;transition:width .7s ease}
+
+.metric-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(120px,1fr));gap:10px;margin-bottom:14px}
+.metric{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);padding:14px 12px;text-align:center}
+.metric-num{font-family:'DM Serif Display',serif;font-size:2rem;line-height:1;margin-bottom:2px}
+.metric-lbl{font-size:11px;color:var(--ink3);text-transform:uppercase;letter-spacing:.05em}
+
+.tag{display:inline-block;font-size:11px;font-family:'DM Mono',monospace;padding:2px 9px;border-radius:20px;margin:2px;font-weight:500}
+.t-high{background:var(--danger-light);color:var(--danger)}
+.t-medium{background:var(--warn-light);color:var(--warn)}
+.t-low{background:var(--accent-light);color:var(--accent)}
+.t-info{background:var(--info-light);color:var(--info)}
+.t-pass{background:var(--good-light);color:var(--good)}
+.t-fail{background:var(--danger-light);color:var(--danger)}
+.t-warn{background:var(--warn-light);color:var(--warn)}
+
+.bias-row{padding:9px 0;border-bottom:1px solid var(--border);font-size:13px;display:flex;gap:8px;align-items:flex-start;flex-wrap:wrap}
+.bias-row:last-child{border-bottom:none}
+.bias-reason{color:var(--ink2);flex:1;min-width:180px;font-size:12px}
+
+.legal-row{display:flex;align-items:flex-start;gap:10px;padding:8px 0;border-bottom:1px solid var(--border);font-size:13px}
+.legal-row:last-child{border-bottom:none}
+.check-circle{width:18px;height:18px;border-radius:50%;flex-shrink:0;margin-top:1px;display:flex;align-items:center;justify-content:center;font-size:10px;font-weight:700}
+.c-pass{background:var(--good-light);color:var(--good)}
+.c-fail{background:var(--danger-light);color:var(--danger)}
+.c-warn{background:var(--warn-light);color:var(--warn)}
+
+.issue-row{display:flex;gap:8px;padding:7px 0;font-size:13px;border-bottom:1px solid var(--border)}
+.issue-row:last-child{border-bottom:none}
+.issue-arrow{color:var(--accent-mid);font-weight:600;flex-shrink:0;margin-top:1px}
+
+.compare-grid{display:grid;grid-template-columns:1fr 1fr;gap:14px}
+@media(max-width:580px){.compare-grid{grid-template-columns:1fr}}
+
+.ethical-card{background:#FFFBF0;border:1px solid var(--warn-border);border-radius:var(--radius-lg);padding:20px 24px;margin-bottom:14px}
+
+.rewrite-card{background:var(--good-light);border:1px solid #7DC47A;border-radius:var(--radius-lg);padding:20px 24px;margin-bottom:14px}
+
+pre.rewrite-text{font-family:'DM Mono',monospace;font-size:12px;line-height:1.8;white-space:pre-wrap;color:var(--ink)}
+pre.rewrite-text.streaming::after{content:'▌';animation:blink .6s infinite;color:var(--accent-mid)}
+@keyframes blink{0%,100%{opacity:1}50%{opacity:0}}
+
+.loader{text-align:center;padding:60px 20px}
+.dots{display:inline-flex;gap:8px;margin-bottom:14px}
+.dot{width:10px;height:10px;border-radius:50%;background:var(--accent-mid);animation:pulse 1.2s ease-in-out infinite}
+@keyframes pulse{0%,100%{opacity:.2;transform:scale(.8)}50%{opacity:1;transform:scale(1)}}
+.loader-msg{font-size:14px;color:var(--ink2)}
+
+.results-header{display:flex;justify-content:space-between;align-items:center;margin-bottom:20px;flex-wrap:wrap;gap:10px}
+.results-header h2{font-family:'DM Serif Display',serif;font-size:1.4rem}
+
+.error-box{background:var(--danger-light);border:1px solid #f0aaaa;border-radius:var(--radius);padding:12px 16px;font-size:13px;color:var(--danger);margin-top:10px;display:none}
+
+footer{text-align:center;padding:24px;font-size:12px;color:var(--ink3);border-top:1px solid var(--border);margin-top:20px}
+</style>
+</head>
+<body>
+
+<header>
+  <div>
+    <div class="header-title">Perfect<span>Role</span></div>
+    <div style="font-size:13px;color:#9C9590;margin-top:4px">BUS670 · Option B · William Jessup University</div>
+  </div>
+  <div class="header-meta">Strategic AI for Modern Business<br/>Ray Bryant · Spring 2026</div>
+</header>
+
+<main>
+
+  <div class="tabs">
+    <button class="tab active" onclick="switchTab('single')">Single JD analyzer</button>
+    <button class="tab" onclick="switchTab('compare')">Compare two JDs</button>
+  </div>
+
+  <!-- ═══ SINGLE TAB ═══ -->
+  <div id="tab-single">
+
+    <div id="single-input">
+      <div class="intro">
+        <h2>Analyze &amp; rewrite your job description</h2>
+        <p>Paste any job posting below. Get bias flags, legal risk scores, readability analysis, a full rewrite, and an ethical review.</p>
+      </div>
+      <div class="card">
+        <div class="card-label">Job description input</div>
+        <textarea id="jd1" rows="10" placeholder="Paste the full job description here..."></textarea>
+        <div id="single-error" class="error-box"></div>
+        <div class="action-row">
+          <button class="btn btn-primary" onclick="runSingle()">Analyze &amp; Optimize →</button>
+          <button class="btn" onclick="loadSample('jd1')">Load sample JD</button>
+          <button class="btn" onclick="document.getElementById('jd1').value=''">Clear</button>
+        </div>
+      </div>
+    </div>
+
+    <div id="single-loading" style="display:none" class="loader">
+      <div class="dots">
+        <div class="dot"></div>
+        <div class="dot" style="animation-delay:.2s"></div>
+        <div class="dot" style="animation-delay:.4s"></div>
+      </div>
+      <div class="loader-msg" id="single-msg">Scanning for bias...</div>
+    </div>
+
+    <div id="single-results" style="display:none">
+      <div class="results-header">
+        <h2>Analysis results</h2>
+        <div style="display:flex;gap:8px;flex-wrap:wrap">
+          <button class="btn" onclick="copyReport()">Copy full report</button>
+          <button class="btn" onclick="resetSingle()">← New analysis</button>
+        </div>
+      </div>
+
+      <!-- Score bars -->
+      <div class="card">
+        <div class="card-label">Scores</div>
+        <div class="score-bar-row">
+          <div class="score-bar-header">
+            <span class="score-bar-label">Clarity</span>
+            <span id="r-clarity-lbl" style="font-weight:500"></span>
+          </div>
+          <div class="score-track"><div class="score-fill" id="r-clarity-bar"></div></div>
+        </div>
+        <div class="score-bar-row">
+          <div class="score-bar-header">
+            <span class="score-bar-label">Inclusivity</span>
+            <span id="r-incl-lbl" style="font-weight:500"></span>
+          </div>
+          <div class="score-track"><div class="score-fill" id="r-incl-bar"></div></div>
+        </div>
+        <div class="score-bar-row">
+          <div class="score-bar-header">
+            <span class="score-bar-label">Readability (Flesch-Kincaid grade)</span>
+            <span id="r-read-lbl" style="font-weight:500"></span>
+          </div>
+          <div class="score-track"><div class="score-fill" id="r-read-bar"></div></div>
+        </div>
+        <div id="r-readability-note" style="font-size:12px;color:var(--ink2);margin-top:10px;line-height:1.6;padding:10px;background:var(--surface2);border-radius:var(--radius)"></div>
+      </div>
+
+      <!-- Metric counters -->
+      <div class="metric-grid">
+        <div class="metric">
+          <div class="metric-num" id="r-bias-count">—</div>
+          <div class="metric-lbl">Bias flags</div>
+        </div>
+        <div class="metric">
+          <div class="metric-num" id="r-legal-fails">—</div>
+          <div class="metric-lbl">Legal risks</div>
+        </div>
+        <div class="metric">
+          <div class="metric-num" id="r-issue-count">—</div>
+          <div class="metric-lbl">Recommendations</div>
+        </div>
+      </div>
+
+      <!-- Bias scan -->
+      <div class="card">
+        <div class="card-label">Bias &amp; exclusionary language scan</div>
+        <div id="r-bias"></div>
+      </div>
+
+      <!-- Legal checklist -->
+      <div class="card">
+        <div class="card-label">Legal risk checklist — ADA · EEOC · Title VII · ADEA · FLSA</div>
+        <div id="r-legal"></div>
+      </div>
+
+      <!-- Recommendations -->
+      <div class="card">
+        <div class="card-label">Recommendations</div>
+        <div id="r-issues"></div>
+      </div>
+
+      <!-- Full rewrite -->
+      <div class="rewrite-card">
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px">
+          <div class="card-label" style="margin-bottom:0;color:var(--accent)">Full rewritten job description</div>
+          <button class="btn btn-sm" onclick="copyRewrite()">Copy rewrite</button>
+        </div>
+        <pre class="rewrite-text streaming" id="r-rewrite"></pre>
+      </div>
+
+      <!-- Ethical flags -->
+      <div class="ethical-card">
+        <div class="card-label" style="color:var(--warn)">Ethical considerations for deployment</div>
+        <div id="r-ethical" style="font-size:13px;line-height:1.7"></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ═══ COMPARE TAB ═══ -->
+  <div id="tab-compare" style="display:none">
+
+    <div id="compare-input">
+      <div class="intro">
+        <h2>Compare two job descriptions</h2>
+        <p>Paste two JDs side by side — get scores for both and a verdict on which is stronger.</p>
+      </div>
+      <div class="compare-grid" style="margin-bottom:12px">
+        <div class="card">
+          <div class="card-label">Job description A</div>
+          <textarea id="jd-a" rows="9" placeholder="Paste first JD here..."></textarea>
+          <div class="action-row">
+            <button class="btn btn-sm" onclick="loadSample('jd-a')">Load sample A</button>
+          </div>
+        </div>
+        <div class="card">
+          <div class="card-label">Job description B</div>
+          <textarea id="jd-b" rows="9" placeholder="Paste second JD here..."></textarea>
+          <div class="action-row">
+            <button class="btn btn-sm" onclick="loadSample('jd-b')">Load sample B</button>
+          </div>
+        </div>
+      </div>
+      <div id="compare-error" class="error-box"></div>
+      <button class="btn btn-primary" onclick="runCompare()">Compare Both JDs →</button>
+    </div>
+
+    <div id="compare-loading" style="display:none" class="loader">
+      <div class="dots">
+        <div class="dot"></div>
+        <div class="dot" style="animation-delay:.2s"></div>
+        <div class="dot" style="animation-delay:.4s"></div>
+      </div>
+      <div class="loader-msg" id="compare-msg">Analyzing both JDs...</div>
+    </div>
+
+    <div id="compare-results" style="display:none">
+      <div class="results-header">
+        <h2>Comparison results</h2>
+        <button class="btn" onclick="resetCompare()">← New comparison</button>
+      </div>
+
+      <div class="compare-grid" style="margin-bottom:14px">
+        <div class="card">
+          <div class="card-label">JD A — scores</div>
+          <div id="ca-scores"></div>
+        </div>
+        <div class="card">
+          <div class="card-label">JD B — scores</div>
+          <div id="cb-scores"></div>
+        </div>
+      </div>
+
+      <div class="card">
+        <div class="card-label">Verdict</div>
+        <div id="c-verdict"></div>
+      </div>
+
+      <div class="compare-grid">
+        <div class="card">
+          <div class="card-label">JD A — top issues</div>
+          <div id="ca-issues"></div>
+        </div>
+        <div class="card">
+          <div class="card-label">JD B — top issues</div>
+          <div id="cb-issues"></div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+</main>
+
+<footer>Built with Claude API &nbsp;·&nbsp; BUS670 Capstone &nbsp;·&nbsp; Option B: Job Description Optimizer &nbsp;·&nbsp; Not a substitute for legal HR counsel.</footer>
+
+<script>
+const SAMPLE_A = `Software Engineer – Backend Systems
+
+We're looking for a rockstar ninja developer to join our fast-paced startup. The ideal candidate is a young, energetic go-getter who can hustle hard and wear many hats.
+
+Requirements:
+- 10+ years of experience with React (required)
+- Must be a culture fit with our fraternity-like team environment
+- Native English speaker preferred
+- Must be able to lift 50 lbs regularly
+- Recent college graduate preferred
+- No gaps in employment history
+- Must be available nights and weekends without additional compensation
+
+Responsibilities:
+- Crush it every day and own your projects
+- Work in our open office — no remote workers
+
+We offer competitive pay (based on experience).`;
+
+const SAMPLE_B = `Marketing Manager
+
+We are seeking a Marketing Manager to join our growing team. The ideal candidate will have strong communication skills and experience developing marketing campaigns.
+
+Responsibilities:
+- Develop and execute marketing strategies
+- Manage social media presence and content calendar
+- Analyze campaign performance and report on KPIs
+- Collaborate with sales and product teams
+
+Requirements:
+- Bachelor's degree in Marketing, Communications, or related field
+- 5+ years of marketing experience
+- Proficiency in Google Analytics and marketing automation tools
+- Strong written and verbal communication skills
+
+We offer competitive salary, health benefits, and flexible work arrangements. We are an equal opportunity employer.`;
+
+let lastResult = null;
+
+function loadSample(id) {
+  document.getElementById(id).value = (id === 'jd-b') ? SAMPLE_B : SAMPLE_A;
+}
+
+function switchTab(t) {
+  document.querySelectorAll('.tab').forEach((el,i) => {
+    el.classList.toggle('active', (i===0&&t==='single')||(i===1&&t==='compare'));
+  });
+  document.getElementById('tab-single').style.display = t==='single'?'block':'none';
+  document.getElementById('tab-compare').style.display = t==='compare'?'block':'none';
+}
+
+function resetSingle() {
+  document.getElementById('single-input').style.display='block';
+  document.getElementById('single-results').style.display='none';
+  document.getElementById('single-error').style.display='none';
+}
+function resetCompare() {
+  document.getElementById('compare-input').style.display='block';
+  document.getElementById('compare-results').style.display='none';
+  document.getElementById('compare-error').style.display='none';
+}
+
+function showError(id, msg) {
+  const el = document.getElementById(id);
+  el.textContent = msg;
+  el.style.display = 'block';
+}
+
+function scoreColor(n) {
+  if(n>=75) return '#1A4A2A';
+  if(n>=50) return '#7A4A00';
+  return '#7A1A1A';
+}
+function barColor(n) {
+  if(n>=75) return '#5A8A2A';
+  if(n>=50) return '#D4A843';
+  return '#C0504D';
+}
+
+const singleMsgs = ['Scanning for bias...','Checking legal compliance...','Scoring readability...','Generating full rewrite...','Finishing up...'];
+const compareMsgs = ['Analyzing JD A...','Analyzing JD B...','Comparing results...','Building verdict...'];
+
+async function callAPI(prompt, maxTokens) {
+  const res = await fetch('https://api.anthropic.com/v1/messages', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({
+      model: 'claude-sonnet-4-20250514',
+      max_tokens: maxTokens || 2500,
+      messages: [{ role: 'user', content: prompt }]
+    })
+  });
+  if (!res.ok) {
+    const e = await res.json().catch(()=>({}));
+    throw new Error(e.error?.message || 'API error ' + res.status);
+  }
+  const d = await res.json();
+  let raw = d.content.map(b => b.text||'').join('');
+  return raw.replace(/```json|```/g,'').trim();
+}
+
+async function runSingle() {
+  const jd = document.getElementById('jd1').value.trim();
+  if (!jd || jd.length < 20) { showError('single-error','Please paste a job description first.'); return; }
+  document.getElementById('single-error').style.display='none';
+  document.getElementById('single-input').style.display='none';
+  document.getElementById('single-results').style.display='none';
+  document.getElementById('single-loading').style.display='block';
+
+  let mi = 0;
+  document.getElementById('single-msg').textContent = singleMsgs[0];
+  const t = setInterval(()=>{ document.getElementById('single-msg').textContent = singleMsgs[++mi%singleMsgs.length]; }, 2200);
+
+  const prompt = `You are a senior HR consultant and DEI expert. Analyze this job description thoroughly. Return ONLY valid JSON — no markdown, no backticks, no commentary whatsoever.
+
+{
+  "clarity_score": <integer 0-100>,
+  "clarity_label": "Poor|Fair|Good|Excellent",
+  "inclusivity_score": <integer 0-100>,
+  "inclusivity_label": "Poor|Fair|Good|Excellent",
+  "readability_grade": <Flesch-Kincaid grade level as integer, e.g. 12>,
+  "readability_label": "<short label like 'Grade 12 — too complex for most job seekers'>",
+  "readability_explanation": "<2 sentences: what the grade means for this JD and what to improve>",
+  "bias_flags": [
+    {"phrase":"<exact phrase from JD>","type":"gender|age|ability|cultural|legal_risk|other","severity":"high|medium|low","reason":"<one sentence>"}
+  ],
+  "legal_checklist": [
+    {"law":"ADA","item":"<specific thing checked>","status":"pass|fail|warn","note":"<one sentence>"},
+    {"law":"EEOC","item":"<specific thing checked>","status":"pass|fail|warn","note":"<one sentence>"},
+    {"law":"Title VII","item":"<specific thing checked>","status":"pass|fail|warn","note":"<one sentence>"},
+    {"law":"ADEA","item":"<specific thing checked>","status":"pass|fail|warn","note":"<one sentence>"},
+    {"law":"FLSA","item":"<specific thing checked>","status":"pass|fail|warn","note":"<one sentence>"}
+  ],
+  "issues": ["<full sentence recommendation>","<full sentence recommendation>"],
+  "full_rewrite": "<THE COMPLETE REWRITTEN JOB DESCRIPTION — all sections, fully rewritten for inclusivity, clarity, and legal safety. This must be the full JD, not a summary or excerpt.>",
+  "ethical_flags": "<2-3 sentences about ethical risks if AI-optimized job descriptions were used in real hiring without human review>"
+}
+
+Job Description to analyze:
+${jd}`;
+
+  try {
+    const raw = await callAPI(prompt, 2800);
+    clearInterval(t);
+    const r = JSON.parse(raw);
+    lastResult = r;
+    document.getElementById('single-loading').style.display='none';
+    renderSingle(r);
+  } catch(e) {
+    clearInterval(t);
+    document.getElementById('single-loading').style.display='none';
+    document.getElementById('single-input').style.display='block';
+    showError('single-error','Error: ' + e.message + '. Try again or open inside Claude.ai.');
+  }
+}
+
+function renderSingle(r) {
+  // Score bars
+  document.getElementById('r-clarity-lbl').textContent = r.clarity_score+'/100 — '+r.clarity_label;
+  document.getElementById('r-clarity-lbl').style.color = scoreColor(r.clarity_score);
+  document.getElementById('r-clarity-bar').style.width = r.clarity_score+'%';
+  document.getElementById('r-clarity-bar').style.background = barColor(r.clarity_score);
+
+  document.getElementById('r-incl-lbl').textContent = r.inclusivity_score+'/100 — '+r.inclusivity_label;
+  document.getElementById('r-incl-lbl').style.color = scoreColor(r.inclusivity_score);
+  document.getElementById('r-incl-bar').style.width = r.inclusivity_score+'%';
+  document.getElementById('r-incl-bar').style.background = barColor(r.inclusivity_score);
+
+  const grade = Math.min(r.readability_grade||10, 16);
+  const readPct = Math.max(10, 100 - Math.round((grade/16)*100));
+  const readGood = grade <= 10;
+  document.getElementById('r-read-lbl').textContent = r.readability_label||('Grade '+grade);
+  document.getElementById('r-read-lbl').style.color = readGood?'#1A4A2A':'#7A4A00';
+  document.getElementById('r-read-bar').style.width = readPct+'%';
+  document.getElementById('r-read-bar').style.background = readGood?'#5A8A2A':'#D4A843';
+  document.getElementById('r-readability-note').textContent = r.readability_explanation||'';
+
+  // Metrics
+  const bc = r.bias_flags?r.bias_flags.length:0;
+  const lf = r.legal_checklist?r.legal_checklist.filter(x=>x.status==='fail').length:0;
+  const ic = r.issues?r.issues.length:0;
+  const bEl = document.getElementById('r-bias-count');
+  bEl.textContent=bc; bEl.style.color=bc>3?'#7A1A1A':bc>1?'#7A4A00':'#1A4A2A';
+  const lEl = document.getElementById('r-legal-fails');
+  lEl.textContent=lf; lEl.style.color=lf>0?'#7A1A1A':'#1A4A2A';
+  document.getElementById('r-issue-count').textContent=ic;
+
+  // Bias list
+  const biasEl = document.getElementById('r-bias');
+  biasEl.innerHTML = (r.bias_flags&&r.bias_flags.length)
+    ? r.bias_flags.map(f=>`<div class="bias-row"><span class="tag t-${f.severity}">${f.phrase}</span><span class="bias-reason"><strong>${f.type} · ${f.severity} risk</strong> — ${f.reason}</span></div>`).join('')
+    : '<span class="tag t-low">No bias flags detected</span>';
+
+  // Legal checklist
+  const legalEl = document.getElementById('r-legal');
+  legalEl.innerHTML = (r.legal_checklist||[]).map(l=>{
+    const cls = l.status==='pass'?'c-pass':l.status==='fail'?'c-fail':'c-warn';
+    const sym = l.status==='pass'?'✓':l.status==='fail'?'✗':'!';
+    const tcls = l.status==='pass'?'t-pass':l.status==='fail'?'t-fail':'t-warn';
+    return `<div class="legal-row">
+      <div class="check-circle ${cls}">${sym}</div>
+      <div>
+        <span class="tag ${tcls}" style="font-size:10px">${l.law}</span>
+        <strong style="font-size:12px"> ${l.item}</strong>
+        <div style="font-size:12px;color:#6B6560;margin-top:2px">${l.note}</div>
+      </div>
+    </div>`;
+  }).join('');
+
+  // Issues
+  document.getElementById('r-issues').innerHTML = (r.issues||[]).map(i=>
+    `<div class="issue-row"><span class="issue-arrow">→</span><span>${i}</span></div>`
+  ).join('');
+
+  // Ethical
+  document.getElementById('r-ethical').textContent = r.ethical_flags||'';
+
+  document.getElementById('single-results').style.display='block';
+  window.scrollTo({top:0,behavior:'smooth'});
+
+  // Stream rewrite
+  const el = document.getElementById('r-rewrite');
+  el.textContent='';
+  el.classList.add('streaming');
+  const text = r.full_rewrite||'';
+  let i=0;
+  const iv=setInterval(()=>{
+    if(i<text.length){el.textContent+=text[i++];}
+    else{clearInterval(iv);el.classList.remove('streaming');}
+  },10);
+}
+
+function copyReport() {
+  if(!lastResult) return;
+  const r = lastResult;
+  const lines = [
+    'JOB DESCRIPTION OPTIMIZER — ANALYSIS REPORT',
+    'BUS670 · Option B · William Jessup University',
+    '='.repeat(50),
+    '',
+    'SCORES',
+    `  Clarity:      ${r.clarity_score}/100 (${r.clarity_label})`,
+    `  Inclusivity:  ${r.inclusivity_score}/100 (${r.inclusivity_label})`,
+    `  Readability:  ${r.readability_label}`,
+    `  ${r.readability_explanation}`,
+    '',
+    'BIAS FLAGS',
+    ...(r.bias_flags||[]).map(f=>`  [${f.severity.toUpperCase()}] "${f.phrase}" (${f.type}) — ${f.reason}`),
+    '',
+    'LEGAL CHECKLIST',
+    ...(r.legal_checklist||[]).map(l=>`  [${l.status.toUpperCase()}] ${l.law}: ${l.item} — ${l.note}`),
+    '',
+    'RECOMMENDATIONS',
+    ...(r.issues||[]).map(i=>`  • ${i}`),
+    '',
+    'FULL REWRITTEN JOB DESCRIPTION',
+    '-'.repeat(50),
+    r.full_rewrite||'',
+    '',
+    'ETHICAL CONSIDERATIONS',
+    r.ethical_flags||''
+  ];
+  navigator.clipboard.writeText(lines.join('\n'))
+    .then(()=>alert('Full report copied to clipboard!'))
+    .catch(()=>alert('Copy failed — try selecting the text manually.'));
+}
+
+function copyRewrite() {
+  const text = document.getElementById('r-rewrite').textContent;
+  navigator.clipboard.writeText(text)
+    .then(()=>alert('Rewrite copied to clipboard!'))
+    .catch(()=>alert('Copy failed — try selecting manually.'));
+}
+
+async function runCompare() {
+  const a = document.getElementById('jd-a').value.trim();
+  const b = document.getElementById('jd-b').value.trim();
+  if(!a||a.length<20||!b||b.length<20){showError('compare-error','Please paste both job descriptions.');return;}
+  document.getElementById('compare-error').style.display='none';
+  document.getElementById('compare-input').style.display='none';
+  document.getElementById('compare-results').style.display='none';
+  document.getElementById('compare-loading').style.display='block';
+
+  let mi=0;
+  document.getElementById('compare-msg').textContent=compareMsgs[0];
+  const t=setInterval(()=>{document.getElementById('compare-msg').textContent=compareMsgs[++mi%compareMsgs.length];},1800);
+
+  const prompt = `You are a senior HR consultant. Compare these two job descriptions. Return ONLY valid JSON, no markdown, no backticks:
+
+{
+  "a": {
+    "clarity_score": <0-100>,
+    "inclusivity_score": <0-100>,
+    "readability_grade": <integer>,
+    "bias_count": <integer>,
+    "legal_risk_count": <integer>,
+    "top_issues": ["<recommendation sentence>","<recommendation sentence>","<recommendation sentence>"]
+  },
+  "b": {
+    "clarity_score": <0-100>,
+    "inclusivity_score": <0-100>,
+    "readability_grade": <integer>,
+    "bias_count": <integer>,
+    "legal_risk_count": <integer>,
+    "top_issues": ["<recommendation sentence>","<recommendation sentence>","<recommendation sentence>"]
+  },
+  "winner": "A|B|Tie",
+  "verdict": "<3-4 sentences: which JD is stronger overall, the key reasons why, and the single most important improvement for each>"
+}
+
+JD A:
+${a}
+
+---
+
+JD B:
+${b}`;
+
+  try {
+    const raw = await callAPI(prompt, 1400);
+    clearInterval(t);
+    const r = JSON.parse(raw);
+    document.getElementById('compare-loading').style.display='none';
+    renderCompare(r);
+  } catch(e) {
+    clearInterval(t);
+    document.getElementById('compare-loading').style.display='none';
+    document.getElementById('compare-input').style.display='block';
+    showError('compare-error','Error: '+e.message+'. Try again or open inside Claude.ai.');
+  }
+}
+
+function scoreBlockHTML(s) {
+  return `
+    <div class="score-bar-row">
+      <div class="score-bar-header">
+        <span class="score-bar-label">Clarity</span>
+        <span style="font-weight:500;color:${scoreColor(s.clarity_score)}">${s.clarity_score}/100</span>
+      </div>
+      <div class="score-track"><div class="score-fill" style="width:${s.clarity_score}%;background:${barColor(s.clarity_score)}"></div></div>
+    </div>
+    <div class="score-bar-row">
+      <div class="score-bar-header">
+        <span class="score-bar-label">Inclusivity</span>
+        <span style="font-weight:500;color:${scoreColor(s.inclusivity_score)}">${s.inclusivity_score}/100</span>
+      </div>
+      <div class="score-track"><div class="score-fill" style="width:${s.inclusivity_score}%;background:${barColor(s.inclusivity_score)}"></div></div>
+    </div>
+    <div style="font-size:12px;color:#6B6560;margin-top:10px;display:flex;gap:16px">
+      <span>Readability: Grade ${s.readability_grade}</span>
+      <span>Bias flags: <strong style="color:${s.bias_count>3?'#7A1A1A':s.bias_count>1?'#7A4A00':'#1A4A2A'}">${s.bias_count}</strong></span>
+      <span>Legal risks: <strong style="color:${s.legal_risk_count>0?'#7A1A1A':'#1A4A2A'}">${s.legal_risk_count}</strong></span>
+    </div>`;
+}
+
+function renderCompare(r) {
+  document.getElementById('ca-scores').innerHTML = scoreBlockHTML(r.a);
+  document.getElementById('cb-scores').innerHTML = scoreBlockHTML(r.b);
+
+  const wColor = r.winner==='Tie'?'#0C447C':r.winner==='A'?'#1A4A2A':'#1A4A2A';
+  document.getElementById('c-verdict').innerHTML =
+    `<div style="margin-bottom:10px"><span class="tag t-info" style="font-size:12px;padding:4px 12px">Winner: ${r.winner}</span></div>
+     <p style="font-size:13px;line-height:1.7">${r.verdict}</p>`;
+
+  document.getElementById('ca-issues').innerHTML = (r.a.top_issues||[]).map(i=>
+    `<div class="issue-row"><span class="issue-arrow">→</span><span>${i}</span></div>`
+  ).join('');
+  document.getElementById('cb-issues').innerHTML = (r.b.top_issues||[]).map(i=>
+    `<div class="issue-row"><span class="issue-arrow">→</span><span>${i}</span></div>`
+  ).join('');
+
+  document.getElementById('compare-results').style.display='block';
+  window.scrollTo({top:0,behavior:'smooth'});
+}
+</script>
+</body>
+</html>
